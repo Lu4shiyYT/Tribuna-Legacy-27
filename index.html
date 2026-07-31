@@ -1,1 +1,1454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>Tribuna Legacy 27</title>
+<style>
+@font-face {
+  font-family: 'EA Sports FC';
+  src: url('fonts/easportsfc.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0d1117;color:#c9d1d9;
+  font-family:'EA Sports FC', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow-x:hidden;
+}
+#app{max-width:1280px;margin:0 auto;padding:10px;min-height:100vh}
+.screen{display:none;animation:fadeIn 0.3s}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+button,.btn{
+  background:#1a2a4a;border:none;color:#fff;padding:10px 18px;border-radius:6px;
+  cursor:pointer;font-weight:bold;margin:4px;font-size:14px;transition:background 0.2s,transform 0.1s;
+  font-family:inherit;
+}
+button:hover{background:#2a3a6a;transform:scale(1.02)}
+button.active-nav{background:#4a7ab5 !important}
+button.primary{background:#c8a82a;color:#000}
+button.danger{background:#a03030}
+button.tile{
+  background:#141e30;border:1px solid #2a3a50;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;width:140px;height:100px;font-size:13px;gap:5px;
+}
+.tile-icon{font-size:28px}
+input,select{
+  background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:8px;border-radius:4px;
+  margin:3px;width:180px;font-family:inherit;
+}
+.card{background:#161b22;border-radius:12px;padding:15px;margin:10px 0;box-shadow:0 4px 15px rgba(0,0,0,0.5)}
+.flex-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.grid-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
 
+/* Кастомное модальное окно */
+.custom-modal{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:200;
+}
+.custom-modal-content{
+  background:#161b22;border-radius:16px;padding:20px;max-width:800px;width:90%;
+  max-height:85vh;overflow-y:auto;border:1px solid #30363d;color:#c9d1d9;
+  position:relative;
+}
+.custom-modal-close{
+  position:absolute;top:10px;right:15px;cursor:pointer;font-size:24px;color:#c9d1d9;
+  z-index:201;
+}
+
+/* Полоса доверия */
+.trust-bar-container{
+  position:fixed;top:0;right:0;z-index:300;
+  background:#0d1117;padding:4px 10px;border-radius:0 0 0 8px;
+  display:flex;align-items:center;gap:8px;
+}
+.trust-bar{width:80px;height:8px;background:#30363d;border-radius:4px;overflow:hidden;}
+.trust-bar-fill{height:100%;border-radius:4px;}
+
+/* Календарь */
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;}
+.calendar-cell{
+  background:#1a2a4a;padding:4px;border-radius:4px;cursor:pointer;min-height:50px;
+  font-size:11px;position:relative;
+}
+.calendar-cell.today{background:#c8a82a;color:#000}
+.calendar-cell.match{background:#a03030}
+.calendar-cell.rest{background:#1a372a}
+
+/* Схема поля */
+.pitch{
+  width:100%;aspect-ratio:16/10;background:#1a472a;border-radius:12px;position:relative;
+  margin:10px 0;overflow:hidden;
+}
+.pitch .player-dot{
+  position:absolute;width:36px;height:36px;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:10px;color:white;transform:translate(-50%,-50%);
+  cursor:grab;z-index:10;
+}
+.player-dot .player-name{font-size:8px;text-align:center;margin-top:2px;line-height:1}
+.player-dot .injury-icon{position:absolute;top:-5px;right:-5px;font-size:14px}
+.player-dot .captain-icon{position:absolute;top:-5px;left:-5px;font-size:12px}
+.player-dot .morale-bar{position:absolute;bottom:-8px;width:30px;height:3px;background:#30363d;border-radius:2px}
+.player-dot .morale-fill{height:100%;border-radius:2px}
+
+/* Список запасных/резерва */
+.bench-list{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0}
+.bench-item{
+  background:#30363d;padding:6px;border-radius:4px;cursor:grab;font-size:11px;
+  display:flex;align-items:center;gap:4px;
+}
+
+/* Контур футболки */
+.kit-outline{
+  width:120px;height:150px;position:relative;margin:10px auto;
+}
+.kit-body{
+  width:100px;height:120px;position:absolute;left:10px;top:10px;
+  clip-path: polygon(20% 0%, 80% 0%, 100% 15%, 100% 30%, 90% 45%, 90% 100%, 70% 100%, 70% 45%, 30% 45%, 30% 100%, 10% 100%, 10% 45%, 0% 30%, 0% 15%);
+}
+.kit-sleeve-left{
+  width:25px;height:50px;position:absolute;left:0;top:10px;
+  clip-path: polygon(100% 0%, 30% 0%, 20% 100%, 100% 100%);
+}
+.kit-sleeve-right{
+  width:25px;height:50px;position:absolute;right:0;top:10px;
+  clip-path: polygon(0% 0%, 70% 0%, 80% 100%, 0% 100%);
+}
+
+/* Drag and drop */
+.drag-over{border:2px dashed #c8a82a !important}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Главное меню -->
+  <div id="main-menu" class="screen active">
+    <div class="card" style="text-align:center">
+      <h1 style="font-size:38px;color:#c8a82a;">TRIBUNAL LEGACY 27</h1>
+      <div class="flex-row" style="justify-content:center;margin:20px 0" id="main-menu-buttons"></div>
+    </div>
+  </div>
+
+  <!-- Создание карьеры -->
+  <div id="new-career" class="screen">
+    <div class="card">
+      <h2>Создание карьеры</h2>
+      <div id="entity-list" class="flex-row" style="margin:15px 0"></div>
+      <button id="btn-add-manager">+ Тренер</button>
+      <button id="btn-confirm-career" class="primary">Начать карьеру</button>
+      <button id="btn-back-to-menu">Назад</button>
+    </div>
+  </div>
+
+  <!-- Основной интерфейс -->
+  <div id="career-hub" class="screen">
+    <div id="trust-bar" class="trust-bar-container" style="display:none">
+      <span id="trust-label">Доверие: 50%</span>
+      <div class="trust-bar"><div id="trust-fill" class="trust-bar-fill" style="width:50%;background:#c8a82a"></div></div>
+    </div>
+    <div class="flex-row" style="justify-content:space-between;margin-bottom:10px">
+      <h2 id="hub-title">Tribuna Legacy 27</h2>
+      <div id="top-nav-buttons"></div>
+    </div>
+    <div id="center-content"></div>
+  </div>
+</div>
+
+<!-- Кастомное модальное окно -->
+<div id="custom-modal" class="custom-modal" style="display:none">
+  <div class="custom-modal-content" id="custom-modal-content"></div>
+  <span class="custom-modal-close" onclick="UI.closeModal()">&times;</span>
+</div>
+
+<script>
+// ======================== ЗВУКИ ========================
+const Audio = {
+  ctx: null,
+  init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+  tone(freq, type='sine', dur=0.15, vol=0.3) {
+    if (!this.ctx) return;
+    const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+    o.connect(g); g.connect(this.ctx.destination);
+    o.start(); o.stop(this.ctx.currentTime + dur);
+  },
+  whistle() { this.tone(800,'square',0.2,0.2); setTimeout(()=>this.tone(600,'square',0.25,0.15),200); },
+  goal() { this.tone(523,'triangle',0.1); setTimeout(()=>this.tone(659,'triangle',0.1),100); setTimeout(()=>this.tone(784,'triangle',0.3),200); },
+  kick() { this.tone(200,'sawtooth',0.08,0.4); },
+  foul() { this.tone(150,'sawtooth',0.3,0.3); },
+  card() { this.tone(1000,'square',0.1); setTimeout(()=>this.tone(800,'square',0.15),100); }
+};
+
+// ======================== БАЗА ДАННЫХ ========================
+const DB = {
+  async open() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('TribunaLegacy27', 3);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('saves')) db.createObjectStore('saves', { keyPath: 'slot' });
+      };
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror = e => reject(e.target.error);
+    });
+  },
+  async save(data, slot='auto') {
+    const db = await this.open(); const tx = db.transaction('saves', 'readwrite');
+    tx.objectStore('saves').put({ slot, ...data });
+    await new Promise(res => tx.oncomplete = res);
+  },
+  async load(slot='auto') {
+    const db = await this.open(); const tx = db.transaction('saves', 'readonly');
+    const req = tx.objectStore('saves').get(slot);
+    return new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = rej; });
+  }
+};
+
+// ======================== ГЕНЕРАТОР МИРА ========================
+const WorldGen = {
+  realLeagues: {
+    'Premier League': { country:'England', clubs: ['Arsenal','Aston Villa','Bournemouth','Brentford','Brighton','Chelsea','Crystal Palace','Everton','Fulham','Leeds','Leicester','Liverpool','Man City','Man United','Newcastle','Nottingham Forest','Southampton','Tottenham','West Ham','Wolves'] },
+    'La Liga': { country:'Spain', clubs: ['Real Madrid','Barcelona','Atletico Madrid','Sevilla','Real Betis','Real Sociedad','Villarreal','Athletic Bilbao','Valencia','Osasuna','Celta Vigo','Rayo Vallecano','Espanyol','Mallorca','Getafe','Girona','Almeria','Granada','Cadiz','Elche'] },
+    'Serie A': { country:'Italy', clubs: ['Juventus','Inter','AC Milan','Napoli','Roma','Lazio','Atalanta','Fiorentina','Torino','Udinese','Sassuolo','Bologna','Empoli','Monza','Salernitana','Lecce','Spezia','Verona','Cremonese','Sampdoria'] },
+    'Bundesliga': { country:'Germany', clubs: ['Bayern Munich','Borussia Dortmund','RB Leipzig','Bayer Leverkusen','Wolfsburg','Eintracht Frankfurt','Borussia Mönchengladbach','Union Berlin','Freiburg','Hoffenheim','Mainz','Augsburg','Stuttgart','Bochum','Werder Bremen','Heidenheim','Darmstadt','Köln'] },
+    'Ligue 1': { country:'France', clubs: ['PSG','Marseille','Lyon','Monaco','Lille','Nice','Rennes','Lens','Strasbourg','Montpellier','Toulouse','Reims','Nantes','Brest','Auxerre','Lorient','Clermont','Ajaccio'] }
+  },
+  nationalTeams: ['Argentina','Brazil','Germany','France','Spain','England','Italy','Netherlands','Portugal','Belgium','Croatia','Uruguay','Colombia','Mexico','USA','Japan','South Korea','Senegal','Morocco','Nigeria','Egypt','Cameroon','Ghana','Ivory Coast'],
+  referees: [],
+  generate() {
+    const clubs = {};
+    for (const [league, data] of Object.entries(this.realLeagues)) {
+      data.clubs.forEach(name => {
+        clubs[name] = this.createClub(name, league, data.country, 75 + Math.floor(Math.random() * 15));
+      });
+    }
+    this.nationalTeams.forEach(name => clubs[name] = this.createNationalTeam(name));
+    this.referees = Array.from({length: 30}, (_, i) => ({
+      id: `ref_${i+1}`, name: `Referee ${i+1}`, nationality: this.nationalTeams[i % this.nationalTeams.length], rating: 40 + Math.floor(Math.random() * 60)
+    }));
+    return {
+      clubs,
+      tournaments: {
+        domestic: this.createDomesticTournaments(clubs),
+        international: this.createInternationalTournaments(clubs)
+      },
+      referees: this.referees,
+      date: new Date(2026, 6, 1),
+      news: []
+    };
+  },
+  createClub(name, league, country, ovr) {
+    const positions = ['GK','GK','CB','CB','LB','RB','CM','CM','CM','LW','RW','ST','CB','CM','ST','GK','CB','CM','LW','ST','GK','CB'];
+    const players = Array.from({length:22}, (_, i) => ({
+      id: `${name}_p${i+1}`, name: `Player ${i+1}`, position: positions[i] || 'CM',
+      ovr: Math.max(40, ovr - 5 + Math.floor(Math.random() * 11)),
+      age: 19 + Math.floor(Math.random() * 15),
+      contract: 2 + Math.floor(Math.random() * 4),
+      value: Math.floor((500000 + Math.random() * 5000000) / 1000) * 1000,
+      morale: 70 + Math.random() * 30, fitness: 100, experience: 0,
+      salary: Math.floor((100000 + Math.random() * 500000) / 1000) * 1000,
+      injured: false, isCaptain: false
+    }));
+    // Академия сразу с игроками
+    const academy = [];
+    for (let i=0; i<1+Math.floor(Math.random()*3); i++) {
+      academy.push({
+        id:`${name}_academy_init_${i}`, name:`Academy ${name} ${i+1}`,
+        position:['GK','CB','CM','ST'][Math.floor(Math.random()*4)],
+        ovr:50+Math.floor(Math.random()*15), age:16, contract:2,
+        value:Math.floor(100000 / 1000) * 1000, morale:80, fitness:100, experience:0,
+        salary:Math.floor(50000 / 1000) * 1000, potential: 70+Math.floor(Math.random()*20)
+      });
+    }
+    return {
+      name, league, country, type:'club', ovr, players, academy,
+      budget: Math.floor((30_000_000 + Math.random() * 150_000_000) / 1000) * 1000,
+      staff: { scouts:2, coaches:3 }, trainingFocus:'balanced',
+      tactic:{ formation:'4-4-2', style:'balanced', aggression:5, tempo:'normal', pressing:'medium', width:5, depth:5, buildUp:'mixed', creativity:'disciplined' },
+      huntOffers: [],
+      stadium: { name: `${name} Stadium`, capacity: 30000 + Math.floor(Math.random() * 50000) },
+      sponsors: [{ name:'Main Sponsor', value: 5000000 }],
+      kit: { primary: '#e63946', secondary: '#ffffff', pattern: 'solid' },
+      playerInstructions: {}
+    };
+  },
+  createNationalTeam(name) {
+    const players = Array.from({length:23}, (_, i) => ({
+      id: `${name}_np${i+1}`, name:`Player ${i+1}`,
+      position: i<2?'GK':i<8?'DEF':i<15?'MID':'FWD',
+      ovr: 75 + Math.floor(Math.random() * 15),
+      age: 22 + Math.floor(Math.random() * 10),
+      contract: 0, value: 0, morale: 70, fitness: 100, experience: 0,
+      salary: 0, injured: false, isCaptain: false
+    }));
+    return {
+      name, league:null, country:name, type:'national', ovr:80, players, academy:[],
+      budget:0, staff:{}, trainingFocus:'balanced',
+      tactic:{ formation:'4-3-3', style:'balanced', aggression:5 }, huntOffers:[],
+      stadium: null, sponsors: [], kit: null, playerInstructions: {}
+    };
+  },
+  createDomesticTournaments(clubs) {
+    const leagues = {};
+    for (const c of Object.values(clubs)) {
+      if (c.league && !leagues[c.league]) leagues[c.league] = [];
+      if (c.league) leagues[c.league].push(c.name);
+    }
+    return Object.entries(leagues).map(([name, clubNames]) => ({ name, type:'league', clubs: clubNames }));
+  },
+  createInternationalTournaments(clubs) {
+    const allNational = this.nationalTeams.filter(t => clubs[t]);
+    return [
+      { name:'World Cup 2026', type:'national', participants: allNational.slice(0,16), format:'group+ko', startDate: '06-10', endDate: '07-15' },
+      { name:'Champions League 26/27', type:'club', participants: Object.keys(clubs).filter(c=>clubs[c].type==='club').sort(()=>Math.random()-0.5).slice(0,32), format:'group+ko', startDate: '09-15', endDate: '05-30' }
+    ];
+  }
+};
+
+// ======================== ИГРОВОЙ ДВИЖОК ========================
+const Game = {
+  data: {
+    entities:[], currentEntityIdx:0, world:null,
+    calendarDate:new Date(2026,6,1), season:1, schedule:[], transferWindow:'summer',
+    news: []
+  },
+  get activeEntity() { return this.data.entities[this.data.currentEntityIdx]; },
+  get activeClub() {
+    const e = this.activeEntity;
+    return e ? this.data.world.clubs[e.clubId] : null;
+  },
+  init(world) {
+    this.data.world = world;
+    this.data.calendarDate = new Date(world.date);
+    this.generateFullSchedule();
+    this.generateNews();
+    this.updateTransferWindowStatus();
+  },
+  generateFullSchedule() {
+    let allMatches = [];
+    // Клубные лиги
+    for (const league of this.data.world.tournaments.domestic) {
+      const clubs = league.clubs;
+      for (let i=0; i<clubs.length; i++) {
+        for (let j=i+1; j<clubs.length; j++) {
+          allMatches.push({ home: clubs[i], away: clubs[j], league: league.name, date: null, type: 'league' });
+          allMatches.push({ home: clubs[j], away: clubs[i], league: league.name, date: null, type: 'league' });
+        }
+      }
+    }
+    // Международные турниры с датами
+    for (const tour of this.data.world.tournaments.international) {
+      const [startM, startD] = tour.startDate.split('-').map(Number);
+      const [endM, endD] = tour.endDate.split('-').map(Number);
+      const startDate = new Date(2026, startM-1, startD);
+      const endDate = new Date(2027, endM-1, endD);
+      let d = new Date(startDate);
+      const shuffled = [...tour.participants].sort(()=>Math.random()-0.5);
+      // Группы
+      const groups = [];
+      const groupCount = Math.ceil(shuffled.length / 4);
+      for (let g=0; g<groupCount; g++) groups.push(shuffled.slice(g*4, g*4+4));
+      tour.groups = groups;
+      // Матчи групп
+      for (const group of groups) {
+        for (let i=0; i<group.length; i++) {
+          for (let j=i+1; j<group.length; j++) {
+            allMatches.push({ home: group[i], away: group[j], tournament: tour.name, date: new Date(d), type: 'group' });
+            d.setDate(d.getDate() + 3);
+            if (d > endDate) d = new Date(endDate);
+          }
+        }
+      }
+      // Плей-офф (упрощённо)
+      let roundTeams = groups.length * 2;
+      const rounds = ['Round of 16','Quarterfinal','Semifinal','Final'];
+      for (const round of rounds) {
+        if (roundTeams < 2) break;
+        const matchesCount = Math.floor(roundTeams / 2);
+        for (let i=0; i<matchesCount; i++) {
+          allMatches.push({ home: 'TBD', away: 'TBD', tournament: tour.name, round, date: new Date(d), type: 'ko' });
+          d.setDate(d.getDate() + 3);
+        }
+        roundTeams = matchesCount;
+      }
+    }
+    // Сортировка по дате
+    allMatches.sort((a,b) => a.date - b.date);
+    this.data.schedule = allMatches;
+  },
+  generateNews() {
+    for (let i=0; i<10; i++) {
+      this.data.world.news.push({
+        id: Date.now()+i, title: `News ${i+1}`,
+        text: `Sample news article number ${i+1}.`, type: 'general'
+      });
+    }
+  },
+  getMatchesForClubOnDate(clubId, date) {
+    const dateStr = date.toDateString();
+    return this.data.schedule.filter(m => (m.home === clubId || m.away === clubId) && m.date.toDateString() === dateStr);
+  },
+  getNextMatchForEntity() {
+    const club = this.activeClub; if (!club) return null;
+    return this.data.schedule.find(m => (m.home === club.name || m.away === club.name) && m.date >= this.data.calendarDate) || null;
+  },
+  advanceDays(days) {
+    const oldDate = new Date(this.data.calendarDate);
+    this.data.calendarDate.setDate(this.data.calendarDate.getDate() + days);
+    this.simulateDays(oldDate, days);
+    this.updateTransferWindowStatus();
+    UI.renderCenter();
+  },
+  jumpToNextMatch() {
+    const next = this.getNextMatchForEntity();
+    if (next) {
+      this.data.calendarDate = new Date(next.date);
+      UI.renderCenter();
+      UI.renderOffice();
+    } else UI.notify('Нет матчей');
+  },
+  simulateDays(oldDate, days) {
+    for (let d = new Date(oldDate); d < this.data.calendarDate; d.setDate(d.getDate()+1)) {
+      const dateStr = d.toDateString();
+      this.data.schedule.forEach(m => {
+        if (m.date.toDateString() === dateStr && !m.result) this.simulateMatch(m);
+      });
+      if (d.getDay() !== 0) {
+        for (const ent of this.data.entities) {
+          if (ent.clubId && ent.type === 'manager') {
+            const club = this.data.world.clubs[ent.clubId];
+            const yesterday = new Date(d); yesterday.setDate(yesterday.getDate()-1);
+            const hadMatch = this.data.schedule.some(m =>
+              (m.home === club.name || m.away === club.name) &&
+              m.date.toDateString() === yesterday.toDateString()
+            );
+            if (!hadMatch) this.applyTraining(club);
+            this.applyAging(club);
+          }
+        }
+      }
+      if (d.getMonth() === 3 && d.getDate() === 15) this.generateAcademyPlayers();
+      if (Math.random() < 0.1) {
+        this.data.world.news.push({
+          id: Date.now(), title: `Transfer Rumour`,
+          text: `Rumours about a big transfer...`, type: 'transfer'
+        });
+        if (this.data.world.news.length > 15) this.data.world.news.shift();
+      }
+      this.checkManagerTrust(d);
+    }
+  },
+  simulateMatch(match) {
+    const home = this.data.world.clubs[match.home], away = this.data.world.clubs[match.away];
+    if (!home || !away) return;
+    const ref = this.data.world.referees[Math.floor(Math.random()*this.data.world.referees.length)];
+    const hStr = home.ovr + Math.random()*20, aStr = away.ovr + Math.random()*20;
+    const hGoals = Math.max(0, Math.floor((hStr - aStr)/8 + Math.random()*2));
+    const aGoals = Math.max(0, Math.floor((aStr - hStr)/8 + Math.random()*2));
+    match.result = {
+      homeGoals: hGoals, awayGoals: aGoals,
+      stats: {
+        possessionHome: Math.round(50 + (home.ovr-away.ovr)),
+        possessionAway: 0,
+        shotsHome: 5+Math.floor(Math.random()*10),
+        shotsAway: 5+Math.floor(Math.random()*10),
+        shotsOnTargetHome: 2+Math.floor(Math.random()*5),
+        shotsOnTargetAway: 2+Math.floor(Math.random()*5),
+        fouls: 3+Math.floor(Math.random()*8),
+        yellowCards: Math.floor(Math.random()*3),
+        redCards: Math.random()<0.1 ? 1 : 0,
+        corners: 2+Math.floor(Math.random()*6),
+        penalties: Math.random()<0.1 ? 1 : 0,
+        xG: (Math.random()*2).toFixed(2),
+        mvp: 'Player X'
+      }
+    };
+    match.result.stats.possessionAway = 100 - match.result.stats.possessionHome;
+    [...home.players, ...away.players].forEach(p => {
+      p.experience = (p.experience||0)+1;
+      if (p.experience%10===0 && p.age<35) p.ovr = Math.min(99, p.ovr+1);
+    });
+  },
+  checkManagerTrust(date) {
+    this.data.entities.forEach((ent, idx) => {
+      if (ent.type === 'manager' && ent.clubId) {
+        if (ent.trust === undefined) ent.trust = 50;
+        const club = this.data.world.clubs[ent.clubId];
+        const todayMatches = this.data.schedule.filter(m =>
+          (m.home === club.name || m.away === club.name) &&
+          m.date.toDateString() === date.toDateString() && m.result
+        );
+        todayMatches.forEach(m => {
+          const isHome = m.home === club.name;
+          const gf = isHome ? m.result.homeGoals : m.result.awayGoals;
+          const ga = isHome ? m.result.awayGoals : m.result.homeGoals;
+          if (gf > ga) ent.trust = Math.min(100, ent.trust + 5);
+          else if (gf < ga) ent.trust = Math.max(0, ent.trust - 8);
+          else ent.trust = Math.max(0, ent.trust - 2);
+        });
+        if (ent.trust < 25) {
+          UI.notify(`Вы уволены из ${club.name}!`);
+          this.data.entities.splice(idx, 1);
+          if (this.data.currentEntityIdx >= this.data.entities.length) this.data.currentEntityIdx = 0;
+        }
+      }
+    });
+  },
+  startMatch() {
+    const club = this.activeClub;
+    const matches = this.getMatchesForClubOnDate(club.name, this.data.calendarDate);
+    if (!matches.length) return;
+    const match = matches[0];
+    if (match.result) { UI.notify('Матч уже сыгран'); return; }
+    this.simulateMatch(match);
+    const r = match.result;
+    const s = r.stats;
+    const details = `<h3>Матч завершён!</h3>
+      <p><strong>${match.home} ${r.homeGoals} - ${r.awayGoals} ${match.away}</strong></p>
+      <table style="width:100%"><tr><td>Владение</td><td>${s.possessionHome}% - ${s.possessionAway}%</td></tr>
+      <tr><td>Удары (в створ)</td><td>${s.shotsHome}(${s.shotsOnTargetHome}) - ${s.shotsAway}(${s.shotsOnTargetAway})</td></tr>
+      <tr><td>Фолы</td><td>${s.fouls}</td></tr>
+      <tr><td>Жёлтые карточки</td><td>${s.yellowCards}</td></tr>
+      <tr><td>Красные карточки</td><td>${s.redCards}</td></tr>
+      <tr><td>Угловые</td><td>${s.corners}</td></tr>
+      <tr><td>Пенальти</td><td>${s.penalties}</td></tr>
+      <tr><td>xG</td><td>${s.xG}</td></tr>
+      <tr><td>MVP</td><td>${s.mvp}</td></tr></table>
+      <button onclick="UI.closeModal()">Закрыть</button>`;
+    UI.showModal(details);
+    this.checkManagerTrust(this.data.calendarDate);
+    UI.renderCenter();
+  },
+  updateTransferWindowStatus() {
+    const m = this.data.calendarDate.getMonth(), d = this.data.calendarDate.getDate();
+    this.data.transferWindow = (m===5&&d>=1)||m===6||(m===7&&d<=31) ? 'summer' : (m===0&&d<=1) ? 'winter' : 'closed';
+  },
+  applyTraining(club) {
+    club.players.forEach(p => {
+      if (p.age >= 35 && Math.random()<0.2) p.ovr = Math.max(40, p.ovr-1);
+      else if (Math.random()<0.3) p.ovr = Math.min(99, p.ovr+1);
+    });
+  },
+  applyAging(club) {
+    club.players.forEach(p => {
+      if (Math.random() < 1/365) {
+        p.age++;
+        if (p.age >= 38 && Math.random() < 0.5) this.retirePlayer(p, club);
+        else if (p.age >= 35 && Math.random() < 0.3) p.ovr = Math.max(40, p.ovr-1);
+      }
+    });
+  },
+  retirePlayer(player, club) {
+    club.players = club.players.filter(p => p.id !== player.id);
+    if (!this.data.world.clubs['Free Agents']) this.data.world.clubs['Free Agents'] = this.createFreeAgentClub();
+    this.data.world.clubs['Free Agents'].players.push({
+      id: `regen_${Date.now()}`, name: `Regen ${player.name}`, position: player.position,
+      ovr: 50+Math.floor(Math.random()*15), age:16, contract:0,
+      value: Math.floor(100000 / 1000) * 1000, morale:70, fitness:100, experience:0,
+      salary: Math.floor(50000 / 1000) * 1000, injured: false, isCaptain: false
+    });
+  },
+  createFreeAgentClub() {
+    return {
+      name:'Free Agents', league:null, country:null, type:'club', ovr:0, players:[],
+      budget:0, academy:[], staff:{}, trainingFocus:'balanced', tactic:{}, huntOffers:[],
+      stadium:null, sponsors:[], kit:null, playerInstructions:{}
+    };
+  },
+  generateAcademyPlayers() {
+    // Только для клубов без активного менеджера
+    const managedClubIds = this.data.entities.filter(e=>e.type==='manager'&&e.clubId).map(e=>e.clubId);
+    for (const [name, club] of Object.entries(this.data.world.clubs)) {
+      if (club.type !== 'club' || managedClubIds.includes(name)) continue;
+      for (let i=0; i<1+Math.floor(Math.random()*3); i++) {
+        club.academy.push({
+          id:`${name}_academy_${Date.now()}_${i}`, name:`Academy ${name} ${i+1}`,
+          position:['GK','CB','CM','ST'][Math.floor(Math.random()*4)],
+          ovr:50+Math.floor(Math.random()*15), age:16, contract:2,
+          value:Math.floor(100000 / 1000) * 1000, morale:80, fitness:100, experience:0,
+          salary:Math.floor(50000 / 1000) * 1000, potential: 70+Math.floor(Math.random()*20)
+        });
+      }
+    }
+  },
+  promoteAcademyPlayer(clubId, playerId) {
+    const club = this.data.world.clubs[clubId];
+    const idx = club.academy.findIndex(p => p.id === playerId);
+    if (idx === -1) return false;
+    const player = club.academy.splice(idx, 1)[0];
+    club.players.push(player);
+    return true;
+  },
+  findPlayers(filters) {
+    let players = [];
+    for (const club of Object.values(this.data.world.clubs)) {
+      if (club.name === 'Free Agents' || club.type !== 'club') continue;
+      players.push(...club.players.map(p => ({ ...p, clubId: club.name })));
+    }
+    if (filters.league) players = players.filter(p => this.data.world.clubs[p.clubId]?.league === filters.league);
+    if (filters.position) players = players.filter(p => p.position === filters.position);
+    if (filters.minOvr) players = players.filter(p => p.ovr >= filters.minOvr);
+    if (filters.name) players = players.filter(p => p.name.toLowerCase().includes(filters.name.toLowerCase()));
+    return players;
+  },
+  negotiateTransfer(playerId, from, to, price, salary) {
+    const fromClub = this.data.world.clubs[from], toClub = this.data.world.clubs[to];
+    const player = fromClub.players.find(p => p.id === playerId);
+    if (!player || toClub.budget < price) return false;
+    fromClub.players = fromClub.players.filter(p => p.id !== playerId);
+    toClub.players.push(player);
+    fromClub.budget += price;
+    toClub.budget -= price;
+    player.contract = 2 + Math.floor(Math.random()*3);
+    player.salary = salary;
+    return true;
+  },
+  signFreeAgent(playerId, to) {
+    const free = this.data.world.clubs['Free Agents'];
+    if (!free) return false;
+    const idx = free.players.findIndex(p => p.id === playerId);
+    if (idx === -1) return false;
+    const p = free.players.splice(idx,1)[0];
+    this.data.world.clubs[to].players.push(p);
+    p.contract = 2;
+    return true;
+  },
+  releasePlayer(playerId, clubId) {
+    const club = this.data.world.clubs[clubId];
+    club.players = club.players.filter(p => p.id !== playerId);
+  },
+  movePlayer(clubId, playerId, fromSection, toSection) {
+    const club = this.data.world.clubs[clubId];
+    const findSection = (sec) => {
+      if (sec === 'starting') return club.players.slice(0,11);
+      if (sec === 'bench') return club.players.slice(11,20);
+      if (sec === 'reserves') return club.players.slice(20);
+      return [];
+    };
+    const fromArr = findSection(fromSection);
+    const playerIdx = fromArr.findIndex(p => p.id === playerId);
+    if (playerIdx === -1) return false;
+    const player = fromArr[playerIdx];
+    const globalIdx = club.players.findIndex(p => p.id === playerId);
+    // Удаляем
+    club.players.splice(globalIdx, 1);
+    // Вставляем в нужную секцию
+    if (toSection === 'starting') {
+      const insertIdx = Math.min(10, club.players.length);
+      club.players.splice(insertIdx, 0, player);
+    } else if (toSection === 'bench') {
+      const insertIdx = Math.min(19, club.players.length);
+      club.players.splice(insertIdx, 0, player);
+    } else if (toSection === 'reserves') {
+      club.players.push(player);
+    }
+    return true;
+  },
+  async save() {
+    await DB.save({
+      date: this.data.calendarDate.toISOString(), world: this.data.world, entities: this.data.entities,
+      currentEntityIdx: this.data.currentEntityIdx, schedule: this.data.schedule, season: this.data.season,
+      transferWindow: this.data.transferWindow
+    });
+    UI.notify('Сохранено');
+  },
+  async load() {
+    const s = await DB.load();
+    if (!s) return false;
+    this.data.calendarDate = new Date(s.date);
+    this.data.world = s.world;
+    this.data.entities = s.entities;
+    this.data.currentEntityIdx = s.currentEntityIdx||0;
+    this.data.schedule = s.schedule;
+    this.data.season = s.season||1;
+    this.data.transferWindow = s.transferWindow||'summer';
+    return true;
+  },
+  exportBackup() {
+    const blob = new Blob([JSON.stringify({
+      date: this.data.calendarDate, world: this.data.world, entities: this.data.entities,
+      schedule: this.data.schedule, season: this.data.season, currentEntityIdx: this.data.currentEntityIdx
+    })], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tribuna_backup.json'; a.click();
+    UI.notify('Бэкап скачан');
+  },
+  async importBackup(file) {
+    const text = await file.text(); const d = JSON.parse(text);
+    this.data.calendarDate = new Date(d.date); this.data.world = d.world; this.data.entities = d.entities;
+    this.data.schedule = d.schedule||[]; this.data.season = d.season||1; this.data.currentEntityIdx = d.currentEntityIdx||0;
+    UI.notify('Бэкап загружен'); UI.switchScreen('career-hub'); UI.renderCenter();
+  }
+};
+// ======================== ИНТЕРФЕЙС ========================
+const UI = {
+  currentNav: 'center',
+  switchScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    if (id === 'career-hub') {
+      document.getElementById('career-hub').classList.add('active');
+      this.renderCenter();
+      this.renderNavButtons();
+    } else {
+      document.getElementById(id)?.classList.add('active');
+    }
+  },
+  notify(msg) {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:20px;right:20px;background:#c8a82a;color:#000;padding:12px 20px;border-radius:8px;font-weight:bold;z-index:300;';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  },
+  showModal(content) {
+    document.getElementById('custom-modal-content').innerHTML = content;
+    document.getElementById('custom-modal').style.display = 'flex';
+  },
+  closeModal() {
+    document.getElementById('custom-modal').style.display = 'none';
+  },
+
+  renderNavButtons() {
+    const navs = ['center','squad','transfers','academy','office','personalization'];
+    const labels = { center:'Центр', squad:'Состав', transfers:'Трансферы', academy:'Академия', office:'Офис', personalization:'Персонализация' };
+    document.getElementById('top-nav-buttons').innerHTML = navs.map(n =>
+      `<button class="${this.currentNav === n ? 'active-nav' : ''}" onclick="UI.navigate('${n}')">${labels[n]}</button>`
+    ).join('');
+  },
+  navigate(section) {
+    this.currentNav = section;
+    this.renderNavButtons();
+    switch(section) {
+      case 'center': this.renderCenter(); break;
+      case 'squad': this.renderSquad(); break;
+      case 'transfers': this.renderTransfers(); break;
+      case 'academy': this.renderAcademy(); break;
+      case 'office': this.renderOffice(); break;
+      case 'personalization': this.renderPersonalization(); break;
+    }
+  },
+  refreshAll() { this.renderCenter(); },
+
+  // ========== ЦЕНТР ==========
+  renderCenter() {
+    const club = Game.activeClub;
+    if (!club) {
+      document.getElementById('center-content').innerHTML = '<p>Нет активного клуба. Добавьте тренера в настройках.</p>';
+      return;
+    }
+    const nextMatch = Game.getNextMatchForEntity();
+    const today = Game.data.calendarDate;
+    const trust = Game.activeEntity?.trust || 50;
+
+    // Полоса доверия
+    const trustBar = document.getElementById('trust-bar');
+    trustBar.style.display = 'block';
+    document.getElementById('trust-label').textContent = `Доверие: ${trust}%`;
+    document.getElementById('trust-fill').style.width = `${trust}%`;
+    document.getElementById('trust-fill').style.background = trust < 25 ? '#a03030' : trust < 50 ? '#c8a82a' : '#1a7a1a';
+
+    let matchBlock = '';
+    if (nextMatch) {
+      const daysUntil = Math.ceil((nextMatch.date - today) / (1000*60*60*24));
+      const dayLabel = daysUntil === 0 ? 'сегодня' : (daysUntil === 1 ? 'завтра' : `${daysUntil} д.`);
+      const isToday = daysUntil === 0;
+      matchBlock = `
+        <div style="margin:10px 0;padding:15px;background:#1a2a4a;border-radius:8px;cursor:pointer"
+             onclick="${isToday ? `Game.startMatch()` : `UI.showMatchPreview('${nextMatch.home}','${nextMatch.away}','${nextMatch.date.toISOString()}')`}">
+          <div style="font-size:12px;color:#c8a82a">До следующего матча: ${dayLabel}</div>
+          <div style="display:flex;align-items:center;justify-content:space-around;margin:10px 0">
+            <div style="text-align:center"><div style="font-size:24px">🏟️</div><div>${nextMatch.home}</div></div>
+            <div style="font-size:24px;font-weight:bold">VS</div>
+            <div style="text-align:center"><div style="font-size:24px">🏟️</div><div>${nextMatch.away}</div></div>
+          </div>
+          <div style="font-size:11px;text-align:center">${nextMatch.date.toLocaleDateString()}</div>
+        </div>
+      `;
+    } else {
+      matchBlock = '<div style="margin:10px 0;padding:15px;background:#1a2a4a;border-radius:8px">Нет предстоящих матчей</div>';
+    }
+
+    // Новости (карусель из 5 последних)
+    const news = Game.data.world.news.slice(-5).reverse();
+    let newsBlock = '<div style="max-height:300px;overflow-y:auto">';
+    news.forEach((n, i) => {
+      newsBlock += `<div style="padding:6px;border-bottom:1px solid #30363d;font-size:12px;${i===0?'background:#1a2a4a':''}"><strong>${n.title}</strong><br>${n.text}</div>`;
+    });
+    newsBlock += '</div>';
+
+    document.getElementById('center-content').innerHTML = `
+      <div style="display:flex;gap:15px;flex-wrap:wrap">
+        <div style="flex:3;min-width:280px">
+          <h3 style="font-size:22px;margin-bottom:5px">${today.toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}</h3>
+          ${matchBlock}
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button onclick="UI.navigate('squad')">Перейти в состав</button>
+            <button onclick="UI.navigate('squad'); setTimeout(()=>UI.renderTactics(),100)">Тактические изменения</button>
+          </div>
+        </div>
+        <div style="flex:2;min-width:220px;background:#141e30;border-radius:8px;padding:10px">
+          <h4 style="margin-bottom:5px">📰 Новости</h4>
+          ${newsBlock || '<div style="font-size:12px">Новостей пока нет</div>'}
+        </div>
+      </div>
+    `;
+  },
+
+  showMatchPreview(home, away, dateIso) {
+    const match = Game.data.schedule.find(m => m.home===home && m.away===away && m.date.toISOString()===dateIso);
+    if (!match) return;
+    const content = `
+      <h3>Предстоящий матч</h3>
+      <p>${home} vs ${away}</p>
+      <p>Дата: ${match.date.toLocaleDateString()}</p>
+      <p>${match.tournament ? 'Турнир: '+match.tournament : ''}</p>
+      <button onclick="UI.closeModal()">Закрыть</button>
+    `;
+    UI.showModal(content);
+  },
+
+  // ========== СОСТАВ ==========
+  renderSquad() {
+    const club = Game.activeClub;
+    if (!club) return;
+    const formation = club.tactic?.formation || '4-4-2';
+    const formationPositions = {
+      '4-4-2': [{r:'GK',x:50,y:90},{r:'LB',x:20,y:70},{r:'CB',x:40,y:70},{r:'CB',x:60,y:70},{r:'RB',x:80,y:70},{r:'LM',x:20,y:40},{r:'CM',x:40,y:40},{r:'CM',x:60,y:40},{r:'RM',x:80,y:40},{r:'ST',x:35,y:15},{r:'ST',x:65,y:15}],
+      '4-3-3': [{r:'GK',x:50,y:90},{r:'LB',x:20,y:70},{r:'CB',x:40,y:70},{r:'CB',x:60,y:70},{r:'RB',x:80,y:70},{r:'CM',x:30,y:40},{r:'CM',x:50,y:40},{r:'CM',x:70,y:40},{r:'LW',x:20,y:15},{r:'ST',x:50,y:15},{r:'RW',x:80,y:15}],
+      '3-5-2': [{r:'GK',x:50,y:90},{r:'CB',x:30,y:70},{r:'CB',x:50,y:70},{r:'CB',x:70,y:70},{r:'LM',x:20,y:40},{r:'CM',x:40,y:40},{r:'CM',x:60,y:40},{r:'RM',x:80,y:40},{r:'ST',x:35,y:15},{r:'ST',x:65,y:15},{r:'CM',x:50,y:40}],
+    };
+    const posArray = formationPositions[formation] || formationPositions['4-4-2'];
+
+    // Поле
+    let pitchHTML = '<div class="pitch" id="pitch">';
+    posArray.forEach((p, i) => {
+      const player = club.players[i] || { name: 'Пусто', injured: false, isCaptain: false, morale: 50 };
+      const moraleColor = player.morale > 70 ? '#2ecc71' : player.morale > 40 ? '#f1c40f' : '#e74c3c';
+      pitchHTML += `
+        <div class="player-dot" style="left:${p.x}%;top:${p.y}%;background:${club.kit?.primary||'#e63946'}"
+             draggable="true" data-player-id="${player.id||''}" data-section="starting" data-index="${i}"
+             ondragstart="UI.dragStart(event)" ondragover="UI.dragOver(event)" ondrop="UI.drop(event)">
+          ${player.injured ? '<span class="injury-icon">🚑</span>' : ''}
+          ${player.isCaptain ? '<span class="captain-icon">©</span>' : ''}
+          <span>${i+1}</span>
+          <span class="player-name">${player.name.split(' ').pop()}</span>
+          <div class="morale-bar"><div class="morale-fill" style="width:${player.morale}%;background:${moraleColor}"></div></div>
+        </div>`;
+    });
+    pitchHTML += '</div>';
+
+    // Запасные
+    const bench = club.players.slice(11, 20);
+    let benchHTML = '<div class="bench-list" id="bench-list"><strong>Запас:</strong>';
+    bench.forEach((p, i) => {
+      benchHTML += `<div class="bench-item" draggable="true" data-player-id="${p.id}" data-section="bench" data-index="${i}" ondragstart="UI.dragStart(event)" ondragover="UI.dragOver(event)" ondrop="UI.drop(event)">${p.name}</div>`;
+    });
+    benchHTML += '</div>';
+
+    // Резерв
+    const reserves = club.players.slice(20);
+    let resHTML = '<div class="bench-list" id="reserves-list"><strong>Резерв:</strong>';
+    reserves.forEach((p, i) => {
+      resHTML += `<div class="bench-item" draggable="true" data-player-id="${p.id}" data-section="reserves" data-index="${i}" ondragstart="UI.dragStart(event)" ondragover="UI.dragOver(event)" ondrop="UI.drop(event)">${p.name}</div>`;
+    });
+    resHTML += '</div>';
+
+    document.getElementById('center-content').innerHTML = `
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <h3>Состав — ${club.name}</h3>
+          ${pitchHTML}
+          ${benchHTML}
+          ${resHTML}
+        </div>
+        <div style="width:160px">
+          <button onclick="UI.renderTactics()" style="width:100%">Тактические изменения</button>
+          <button onclick="UI.renderAssignments()" style="width:100%;margin-top:5px">Назначения</button>
+        </div>
+      </div>
+    `;
+  },
+
+  // Drag and drop
+  dragStart(e) {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      playerId: e.target.closest('[data-player-id]')?.dataset.playerId,
+      section: e.target.closest('[data-player-id]')?.dataset.section,
+      index: e.target.closest('[data-player-id]')?.dataset.index
+    }));
+    e.target.style.opacity = '0.5';
+  },
+  dragOver(e) {
+    e.preventDefault();
+    e.target.closest('.bench-item, .player-dot')?.classList.add('drag-over');
+  },
+  drop(e) {
+    e.preventDefault();
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+    const targetEl = e.target.closest('[data-section]');
+    if (!targetEl) return;
+    const toSection = targetEl.dataset.section;
+    const player = Game.activeClub.players.find(p => p.id === data.playerId);
+    const targetPlayer = Game.activeClub.players.find(p => p.id === targetEl.dataset.playerId);
+
+    // Вратарей только на вратарей
+    if (player?.position === 'GK' && targetPlayer?.position !== 'GK' && toSection === 'starting') {
+      UI.notify('Вратаря можно менять только на вратаря!');
+      return;
+    }
+    if (targetPlayer?.position === 'GK' && player?.position !== 'GK' && toSection === 'starting') {
+      UI.notify('Вратаря можно менять только на вратаря!');
+      return;
+    }
+
+    Game.movePlayer(Game.activeClub.name, data.playerId, data.section, toSection);
+    UI.renderSquad();
+  },
+
+  // ========== ТАКТИКА ==========
+  renderTactics() {
+    document.getElementById('center-content').innerHTML = `
+      <h3>Тактика</h3>
+      <div class="flex-row">
+        <button onclick="UI.renderFormations()" class="primary">Схемы</button>
+        <button onclick="UI.renderTacticSettings()">Тактика</button>
+      </div>
+      <div id="tactics-subcontent"></div>
+      <button onclick="UI.navigate('squad')" style="margin-top:10px">← Назад к составу</button>
+    `;
+    this.renderFormations();
+  },
+  renderFormations() {
+    const formations = ['4-4-2','4-3-3','3-5-2','4-2-3-1','4-1-2-1-2','3-4-3','5-3-2','4-3-2-1','4-1-4-1','3-4-1-2','4-2-2-2','3-3-4','5-4-1','4-5-1','3-6-1','5-2-3','4-4-1-1','3-5-1-1','4-3-1-2','3-4-2-1','4-1-3-2','3-2-4-1','5-2-2-1','4-6-0','3-7-0'];
+    const current = Game.activeClub?.tactic?.formation || '4-4-2';
+    document.getElementById('tactics-subcontent').innerHTML = formations.map(f => `
+      <button style="margin:3px;${f===current?'border:2px solid #c8a82a;background:#2a3a6a':''}" onclick="Game.activeClub.tactic.formation='${f}'; UI.renderFormations(); UI.notify('Схема: ${f}')">${f}</button>
+    `).join('');
+  },
+  renderTacticSettings() {
+    const t = Game.activeClub?.tactic || {};
+    document.getElementById('tactics-subcontent').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label>Стиль: <select onchange="Game.activeClub.tactic.style=this.value">
+          <option ${t.style==='possession'?'selected':''}>possession</option>
+          <option ${t.style==='counter'?'selected':''}>counter</option>
+          <option ${t.style==='balanced'?'selected':''}>balanced</option>
+        </select></label>
+        <label>Темп: <select onchange="Game.activeClub.tactic.tempo=this.value">
+          <option ${t.tempo==='slow'?'selected':''}>slow</option>
+          <option ${t.tempo==='normal'?'selected':''}>normal</option>
+          <option ${t.tempo==='fast'?'selected':''}>fast</option>
+        </select></label>
+        <label>Прессинг: <select onchange="Game.activeClub.tactic.pressing=this.value">
+          <option ${t.pressing==='low'?'selected':''}>low</option>
+          <option ${t.pressing==='medium'?'selected':''}>medium</option>
+          <option ${t.pressing==='high'?'selected':''}>high</option>
+        </select></label>
+        <label>Построение: <select onchange="Game.activeClub.tactic.buildUp=this.value">
+          <option ${t.buildUp==='short'?'selected':''}>short</option>
+          <option ${t.buildUp==='long'?'selected':''}>long</option>
+          <option ${t.buildUp==='mixed'?'selected':''}>mixed</option>
+        </select></label>
+        <label>Креативность: <select onchange="Game.activeClub.tactic.creativity=this.value">
+          <option ${t.creativity==='disciplined'?'selected':''}>disciplined</option>
+          <option ${t.creativity==='free'?'selected':''}>free</option>
+        </select></label>
+        <label>Ширина: <input type="range" min="1" max="10" value="${t.width||5}" oninput="Game.activeClub.tactic.width=parseInt(this.value)"> ${t.width||5}</label>
+        <label>Глубина обороны: <input type="range" min="1" max="10" value="${t.depth||5}" oninput="Game.activeClub.tactic.depth=parseInt(this.value)"> ${t.depth||5}</label>
+        <label>Агрессивность: <input type="range" min="1" max="10" value="${t.aggression||5}" oninput="Game.activeClub.tactic.aggression=parseInt(this.value)"> ${t.aggression||5}</label>
+        <label>Частота ударов: <input type="range" min="1" max="10" value="${t.shooting||5}" oninput="Game.activeClub.tactic.shooting=parseInt(this.value)"> ${t.shooting||5}</label>
+        <label>Частота навесов: <input type="range" min="1" max="10" value="${t.crossing||5}" oninput="Game.activeClub.tactic.crossing=parseInt(this.value)"> ${t.crossing||5}</label>
+        <label>Дриблинг: <input type="range" min="1" max="10" value="${t.dribbling||5}" oninput="Game.activeClub.tactic.dribbling=parseInt(this.value)"> ${t.dribbling||5}</label>
+        <label>Риск паса: <input type="range" min="1" max="10" value="${t.passRisk||5}" oninput="Game.activeClub.tactic.passRisk=parseInt(this.value)"> ${t.passRisk||5}</label>
+        <label>Линия защиты: <input type="range" min="1" max="10" value="${t.defensiveLine||5}" oninput="Game.activeClub.tactic.defensiveLine=parseInt(this.value)"> ${t.defensiveLine||5}</label>
+        <label>Свобода перемещения: <input type="range" min="1" max="10" value="${t.freedom||5}" oninput="Game.activeClub.tactic.freedom=parseInt(this.value)"> ${t.freedom||5}</label>
+      </div>
+      <button onclick="UI.notify('Тактика сохранена')" style="margin-top:10px">Применить</button>
+    `;
+  },
+
+  // ========== НАЗНАЧЕНИЯ ==========
+  renderAssignments() {
+    const club = Game.activeClub;
+    const players = club.players.slice(0,11);
+    const instructions = [
+      'Атаковать','Защищаться','Чаще через вратаря','Длинные передачи','Короткие передачи',
+      'Прессинг','Свободная роль','Держать позицию','Подключаться в атаку','Оставаться сзади',
+      'Смещаться в центр','Играть шире','Бить издали','Играть в стенку','Обводить',
+      'Подавать','Играть головой','Отбор','Зонная опека','Персональная опека',
+      'Быстрый возврат','Контроль мяча','Открываться','Создавать глубину','Меняться флангами'
+    ];
+
+    let html = '<h3>Назначения</h3><h4>Капитан и стандарты</h4>';
+    html += `<label>Капитан: <select onchange="UI.setCaptain(this.value)">` +
+      players.map(p => `<option ${p.isCaptain?'selected':''}>${p.name}</option>`).join('') + '</select></label><br>';
+    html += `<label>Пенальти: <select onchange="Game.activeClub.penaltyTaker=this.value">` +
+      players.map(p => `<option>${p.name}</option>`).join('') + '</select></label><br>';
+    html += `<label>Левый угловой: <select onchange="Game.activeClub.cornerLeft=this.value">` +
+      players.map(p => `<option>${p.name}</option>`).join('') + '</select></label><br>';
+    html += `<label>Правый угловой: <select onchange="Game.activeClub.cornerRight=this.value">` +
+      players.map(p => `<option>${p.name}</option>`).join('') + '</select></label><br>';
+    html += '<h4>Индивидуальные установки</h4>';
+    html += '<div id="instructions-container"></div>';
+    html += '<button onclick="UI.addInstruction()">+ Добавить установку</button>';
+    html += '<button onclick="UI.navigate(\'squad\')" style="margin-top:10px">← Назад к составу</button>';
+
+    document.getElementById('center-content').innerHTML = html;
+    // Загружаем существующие установки
+    const existing = club.playerInstructions || {};
+    Object.entries(existing).forEach(([playerId, instr]) => {
+      this.addInstructionRow(playerId, instr);
+    });
+  },
+  setCaptain(name) {
+    const club = Game.activeClub;
+    club.players.forEach(p => p.isCaptain = false);
+    const player = club.players.find(p => p.name === name);
+    if (player) player.isCaptain = true;
+    UI.notify(`${name} назначен капитаном`);
+  },
+  addInstruction(playerId = '', instruction = '') {
+    const container = document.getElementById('instructions-container');
+    const row = document.createElement('div');
+    row.className = 'flex-row';
+    row.style.margin = '3px 0';
+    const club = Game.activeClub;
+    const players = club.players.slice(0,11);
+    const instructions = [
+      'Атаковать','Защищаться','Чаще через вратаря','Длинные передачи','Короткие передачи',
+      'Прессинг','Свободная роль','Держать позицию','Подключаться в атаку','Оставаться сзади',
+      'Смещаться в центр','Играть шире','Бить издали','Играть в стенку','Обводить',
+      'Подавать','Играть головой','Отбор','Зонная опека','Персональная опека',
+      'Быстрый возврат','Контроль мяча','Открываться','Создавать глубину','Меняться флангами'
+    ];
+    row.innerHTML = `
+      <select onchange="UI.saveInstruction(this)" class="instr-player">
+        <option value="">Игрок</option>${players.map(p => `<option value="${p.id}" ${p.id===playerId?'selected':''}>${p.name}</option>`).join('')}
+      </select>
+      <select onchange="UI.saveInstruction(this)" class="instr-value">
+        <option value="">Установка</option>${instructions.map(i => `<option value="${i}" ${i===instruction?'selected':''}>${i}</option>`).join('')}
+      </select>
+      <button class="danger" onclick="this.parentElement.remove(); UI.saveAllInstructions()">✖</button>
+    `;
+    container.appendChild(row);
+  },
+  addInstructionRow(playerId, instruction) {
+    this.addInstruction(playerId, instruction);
+  },
+  saveInstruction(el) {
+    const row = el.closest('.flex-row');
+    const playerSel = row.querySelector('.instr-player');
+    const instrSel = row.querySelector('.instr-value');
+    if (playerSel.value && instrSel.value) {
+      const club = Game.activeClub;
+      if (!club.playerInstructions) club.playerInstructions = {};
+      club.playerInstructions[playerSel.value] = instrSel.value;
+    }
+  },
+  saveAllInstructions() {
+    const club = Game.activeClub;
+    club.playerInstructions = {};
+    document.querySelectorAll('#instructions-container .flex-row').forEach(row => {
+      const player = row.querySelector('.instr-player')?.value;
+      const instr = row.querySelector('.instr-value')?.value;
+      if (player && instr) club.playerInstructions[player] = instr;
+    });
+    UI.notify('Установки сохранены');
+  },
+
+  // ========== ТРАНСФЕРЫ ==========
+  renderTransfers() {
+    document.getElementById('center-content').innerHTML = `
+      <h3>Трансферы</h3>
+      <div class="flex-row">
+        <button onclick="UI.renderTransferNews()" class="primary">Свежие трансферы</button>
+        <button onclick="UI.renderPlayerSearch()">Найти игрока</button>
+        <button onclick="UI.renderScout()">Скаут</button>
+      </div>
+      <div id="transfer-subcontent"></div>
+    `;
+    this.renderTransferNews();
+  },
+  renderTransferNews() {
+    document.getElementById('transfer-subcontent').innerHTML = '<p>Свежих трансферов за последние 7 дней нет</p>';
+  },
+  renderPlayerSearch() {
+    document.getElementById('transfer-subcontent').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:5px;max-width:500px">
+        <input id="search-name" placeholder="Имя игрока..." style="width:100%">
+        <div class="flex-row">
+          <select id="search-pos"><option value="">Все позиции</option><option>GK</option><option>DEF</option><option>MID</option><option>FWD</option></select>
+          <select id="search-league"><option value="">Все лиги</option>${Object.keys(WorldGen.realLeagues).map(l=>`<option>${l}</option>`).join('')}</select>
+          <input id="search-ovr" type="number" placeholder="OVR мин" style="width:80px">
+          <input id="search-age" type="number" placeholder="Возраст макс" style="width:80px">
+        </div>
+        <button onclick="UI.searchPlayers()">🔍 Найти</button>
+        <div id="search-results" style="margin-top:10px;max-height:400px;overflow-y:auto"></div>
+      </div>
+    `;
+  },
+  searchPlayers() {
+    const filters = {
+      name: document.getElementById('search-name')?.value,
+      position: document.getElementById('search-pos')?.value,
+      league: document.getElementById('search-league')?.value,
+      minOvr: parseInt(document.getElementById('search-ovr')?.value) || 0,
+    };
+    const players = Game.findPlayers(filters);
+    document.getElementById('search-results').innerHTML = players.slice(0,20).map(p => `
+      <div style="padding:6px;border-bottom:1px solid #30363d;cursor:pointer;display:flex;justify-content:space-between"
+           onclick="UI.showPlayerDetail('${p.id}','${p.clubId}')">
+        <span>${p.name} (${p.position}) OVR ${p.ovr}</span>
+        <span>${p.clubId} — ${p.value.toLocaleString()}€</span>
+      </div>
+    `).join('') || 'Никого не найдено';
+  },
+  showPlayerDetail(playerId, clubId) {
+    const club = Game.data.world.clubs[clubId];
+    const player = club?.players.find(p => p.id === playerId);
+    if (!player) return;
+    const canBuy = Game.data.transferWindow !== 'closed' && Game.activeClub.budget >= player.value;
+    const content = `
+      <h3>${player.name}</h3>
+      <p>Позиция: ${player.position} | OVR: ${player.ovr} | Возраст: ${player.age}</p>
+      <p>Клуб: ${club.name} | Контракт: ${player.contract} лет</p>
+      <p>Зарплата: ${player.salary.toLocaleString()}€ | Стоимость: ${player.value.toLocaleString()}€</p>
+      <button ${canBuy?'':'disabled'} onclick="UI.buyPlayer('${player.id}','${clubId}')">
+        ${canBuy ? 'Подписать' : 'Недоступно'}
+      </button>
+      <button onclick="UI.closeModal()">Закрыть</button>
+    `;
+    UI.showModal(content);
+  },
+  buyPlayer(playerId, fromClubId) {
+    const player = Game.data.world.clubs[fromClubId]?.players.find(p => p.id === playerId);
+    if (!player) return;
+    const price = prompt(`Введите сумму (цена: ${player.value.toLocaleString()}€)`, player.value);
+    if (!price) return;
+    const salary = prompt(`Зарплата (текущая: ${player.salary.toLocaleString()}€)`, player.salary);
+    if (!salary) return;
+    const ok = Game.negotiateTransfer(playerId, fromClubId, Game.activeClub.name, Number(price), Number(salary));
+    UI.notify(ok ? 'Трансфер совершён!' : 'Недостаточно бюджета');
+    if (ok) { UI.closeModal(); UI.renderTransfers(); }
+  },
+  renderScout() {
+    document.getElementById('transfer-subcontent').innerHTML = `
+      <h4>Скаут</h4>
+      <div class="flex-row">
+        <label>Континент: <select id="scout-continent"><option>Europe</option><option>South America</option><option>Africa</option><option>Asia</option></select></label>
+        <label>Позиция: <select id="scout-pos"><option value="">Любая</option><option>GK</option><option>DEF</option><option>MID</option><option>FWD</option></select></label>
+        <label>Макс. возраст: <input id="scout-age" type="number" value="21" style="width:60px"></label>
+      </div>
+      <button onclick="UI.notify('Скаут отправлен! Ждите 14 дней.')">Отправить скаута</button>
+    `;
+  },
+
+  // ========== АКАДЕМИЯ ==========
+  renderAcademy() {
+    const club = Game.activeClub;
+    if (!club) return;
+    let html = '<h3>Академия</h3>';
+    if (club.academy && club.academy.length) {
+      html += '<table style="width:100%"><tr><th>Имя</th><th>Поз</th><th>OVR</th><th>Возраст</th><th>Потенциал</th><th></th></tr>';
+      club.academy.forEach(p => {
+        html += `<tr><td>${p.name}</td><td>${p.position}</td><td>${p.ovr}</td><td>${p.age}</td><td>${p.potential||'?'}</td>
+          <td><button onclick="Game.promoteAcademyPlayer('${club.name}','${p.id}'); UI.renderAcademy(); UI.notify('${p.name} в составе')">В состав</button></td></tr>`;
+      });
+      html += '</table>';
+    } else {
+      html += '<p>В академии пока нет игроков.</p>';
+    }
+    document.getElementById('center-content').innerHTML = html;
+  },
+
+  // ========== ОФИС ==========
+  renderOffice() {
+    document.getElementById('center-content').innerHTML = `
+      <h3>Офис</h3>
+      <div class="flex-row">
+        <button onclick="UI.renderCalendar()" class="primary">Календарь</button>
+        <button onclick="UI.renderTournaments()">Турниры</button>
+      </div>
+      <div id="office-subcontent"></div>
+    `;
+    this.renderCalendar();
+  },
+  renderCalendar() {
+    const today = Game.data.calendarDate;
+    const month = today.getMonth();
+    const year = today.getFullYear();
+    const firstDay = new Date(year, month, 1).getDay() || 7;
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    let html = `<h4>${today.toLocaleDateString('ru-RU', {month:'long', year:'numeric'})}</h4><div class="calendar-grid">`;
+    // Дни недели
+    ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(d => html += `<div style="font-weight:bold;font-size:12px">${d}</div>`);
+    for (let i=1; i<firstDay; i++) html += '<div></div>';
+    for (let d=1; d<=daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      const dateStr = date.toDateString();
+      const matches = Game.activeClub ? Game.data.schedule.filter(m => (m.home===Game.activeClub.name||m.away===Game.activeClub.name) && m.date.toDateString()===dateStr) : [];
+      const isToday = date.toDateString() === today.toDateString();
+      const hasMatch = matches.length > 0;
+      const isRest = date.getDay() === 0 || date.getDay() === 6;
+      let cls = 'calendar-cell';
+      if (isToday) cls += ' today';
+      else if (hasMatch) cls += ' match';
+      else if (isRest) cls += ' rest';
+      let content = `<strong>${d}</strong>`;
+      if (hasMatch) {
+        matches.forEach(m => {
+          content += `<div style="font-size:8px">${m.home.substring(0,6)} vs ${m.away.substring(0,6)}</div>`;
+        });
+      }
+      html += `<div class="${cls}" onclick="UI.showDayDetail('${date.toISOString()}')">${content}</div>`;
+    }
+    html += '</div>';
+    document.getElementById('office-subcontent').innerHTML = html;
+  },
+  showDayDetail(dateIso) {
+    const date = new Date(dateIso);
+    const club = Game.activeClub;
+    const matches = club ? Game.data.schedule.filter(m => (m.home===club.name||m.away===club.name) && m.date.toDateString()===date.toDateString()) : [];
+    let content = `<h3>${date.toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'})}</h3>`;
+    if (matches.length) {
+      matches.forEach(m => {
+        if (m.result) {
+          const r = m.result, s = r.stats;
+          content += `<p><strong>${m.home} ${r.homeGoals} - ${r.awayGoals} ${m.away}</strong></p>`;
+          content += `<table style="width:100%;font-size:11px">
+            <tr><td>Владение</td><td>${s.possessionHome}% - ${s.possessionAway}%</td></tr>
+            <tr><td>Удары (створ)</td><td>${s.shotsHome}(${s.shotsOnTargetHome}) - ${s.shotsAway}(${s.shotsOnTargetAway})</td></tr>
+            <tr><td>Фолы / ЖК / КК</td><td>${s.fouls} / ${s.yellowCards} / ${s.redCards}</td></tr>
+            <tr><td>Угловые</td><td>${s.corners}</td></tr>
+            <tr><td>Пенальти / xG</td><td>${s.penalties} / ${s.xG}</td></tr>
+            <tr><td>MVP</td><td>${s.mvp}</td></tr></table>`;
+        } else {
+          content += `<p>Предстоящий матч: ${m.home} vs ${m.away}</p>`;
+        }
+      });
+    } else {
+      content += `<p>${date.getDay()===0?'День отдыха':'Тренировочный день'}</p>`;
+    }
+    content += '<button onclick="UI.closeModal()">Закрыть</button>';
+    UI.showModal(content);
+  },
+  renderTournaments() {
+    const tournaments = Game.data.world.tournaments.international;
+    let html = '<h4>Турниры сезона 2026/27</h4>';
+    tournaments.forEach(t => {
+      html += `<div style="cursor:pointer;padding:6px;margin:4px 0;background:#1a2a4a;border-radius:4px" onclick="UI.showTournamentDetail('${t.name}')">
+        🏆 ${t.name} (${t.startDate} — ${t.endDate})
+      </div>`;
+    });
+    document.getElementById('office-subcontent').innerHTML = html;
+  },
+  showTournamentDetail(name) {
+    const tour = Game.data.world.tournaments.international.find(t => t.name === name);
+    if (!tour) return;
+    let content = `<h3>${tour.name}</h3><p>Даты: ${tour.startDate} — ${tour.endDate}</p><p>Участников: ${tour.participants.length}</p>`;
+    // Таблица групп
+    if (tour.groups) {
+      tour.groups.forEach((group, idx) => {
+        content += `<p><strong>Группа ${idx+1}:</strong> ${group.join(', ')}</p>`;
+      });
+    }
+    content += '<button onclick="UI.closeModal()">Закрыть</button>';
+    UI.showModal(content);
+  },
+
+  // ========== ПЕРСОНАЛИЗАЦИЯ ==========
+  renderPersonalization() {
+    const club = Game.activeClub;
+    if (!club) return;
+    document.getElementById('center-content').innerHTML = `
+      <h3>Персонализация — ${club.name}</h3>
+      <div class="flex-row" style="margin-bottom:10px">
+        <button onclick="UI.renderEntitySwitch()">Переключить клуб</button>
+        <button onclick="UI.renderStadium()">Стадион</button>
+        <button onclick="UI.renderSponsors()">Спонсоры</button>
+        <button onclick="UI.renderKitEditor()">Форма</button>
+        <button onclick="Game.exportBackup()">Бэкап</button>
+        <button onclick="UI.importBackup()">Импорт</button>
+      </div>
+      <div id="personalization-subcontent"></div>
+    `;
+    this.renderStadium();
+  },
+  renderEntitySwitch() {
+    let html = '<h4>Переключение между клубами</h4>';
+    Game.data.entities.forEach((e, i) => {
+      html += `<div style="padding:4px;cursor:pointer;${i===Game.data.currentEntityIdx?'background:#1a2a4a':''}" onclick="Game.data.currentEntityIdx=${i}; UI.renderCenter(); UI.notify('Переключено на ${e.clubId||'без клуба'}')">
+        ${e.type==='manager'?'👔':'⚽'} ${e.clubId||'Без клуба'}
+      </div>`;
+    });
+    html += '<button onclick="UI.renderPersonalization()">← Назад</button>';
+    document.getElementById('personalization-subcontent').innerHTML = html;
+  },
+  renderStadium() {
+    const club = Game.activeClub;
+    document.getElementById('personalization-subcontent').innerHTML = `
+      <h4>Стадион</h4>
+      <p>Название: ${club.stadium.name}</p>
+      <p>Вместимость: ${club.stadium.capacity.toLocaleString()}</p>
+    `;
+  },
+  renderSponsors() {
+    const club = Game.activeClub;
+    let html = '<h4>Спонсоры</h4>';
+    club.sponsors.forEach(s => html += `<p>${s.name}: ${s.value.toLocaleString()}€</p>`);
+    document.getElementById('personalization-subcontent').innerHTML = html;
+  },
+  renderKitEditor() {
+    const club = Game.activeClub;
+    const kit = club.kit || { primary:'#e63946', secondary:'#ffffff', pattern:'solid' };
+    const patterns = ['solid','stripes','center_stripe','horizontal','checks','diagonal','hoops','half','sash','pinstripe','zigzag','diamonds','gradient','camo','dots'];
+    document.getElementById('personalization-subcontent').innerHTML = `
+      <h4>Редактор формы</h4>
+      <div style="text-align:center">
+        <div class="kit-outline" id="kit-preview">
+          <div class="kit-sleeve-left" style="background:${kit.primary}"></div>
+          <div class="kit-sleeve-right" style="background:${kit.primary}"></div>
+          <div class="kit-body" style="background:${kit.primary};${kit.pattern==='stripes'?'background:repeating-linear-gradient(90deg,'+kit.primary+','+kit.primary+' 4px,'+kit.secondary+' 4px,'+kit.secondary+' 8px)':''}${kit.pattern==='center_stripe'?'background:linear-gradient(90deg,'+kit.primary+' 45%,'+kit.secondary+' 45%,'+kit.secondary+' 55%,'+kit.primary+' 55%)':''}${kit.pattern==='horizontal'?'background:repeating-linear-gradient(0deg,'+kit.primary+','+kit.primary+' 5px,'+kit.secondary+' 5px,'+kit.secondary+' 10px)':''}${kit.pattern==='checks'?'background:conic-gradient('+kit.primary+' 90deg,'+kit.secondary+' 90deg 180deg,'+kit.primary+' 180deg 270deg,'+kit.secondary+' 270deg) 0 0/10px 10px':''}"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <label>Основной: <input type="color" value="${kit.primary}" onchange="UI.updateKitPreview(this.value, null, null)"></label>
+        <label>Дополнительный: <input type="color" value="${kit.secondary}" onchange="UI.updateKitPreview(null, this.value, null)"></label>
+        <label>Рисунок: <select onchange="UI.updateKitPreview(null, null, this.value)">
+          ${patterns.map(p => `<option value="${p}" ${kit.pattern===p?'selected':''}>${p}</option>`).join('')}
+        </select></label>
+      </div>
+      <button onclick="UI.saveKit()" style="margin-top:10px">Сохранить форму</button>
+    `;
+  },
+  updateKitPreview(primary, secondary, pattern) {
+    const kit = Game.activeClub.kit;
+    if (primary) kit.primary = primary;
+    if (secondary) kit.secondary = secondary;
+    if (pattern) kit.pattern = pattern;
+    this.renderKitEditor();
+  },
+  saveKit() {
+    UI.notify('Форма сохранена');
+  },
+
+  // ========== СТАРТ КАРЬЕРЫ ==========
+  startNewCareer() {
+    Game.data.world = WorldGen.generate();
+    Game.data.entities = [];
+    Game.data.calendarDate = new Date(Game.data.world.date);
+    Game.init(Game.data.world);
+    document.getElementById('entity-list').innerHTML = '';
+    this.switchScreen('new-career');
+  },
+  addEntity(type) {
+    if (Game.data.entities.length>=6) return this.notify('Максимум 6');
+    Game.data.entities.push({ type:'manager', clubId:null, playerId:null, name:'Тренер', league:null, trust:50 });
+    this.renderEntityList();
+  },
+  renderEntityList() {
+    const leagues = Object.keys(WorldGen.realLeagues);
+    document.getElementById('entity-list').innerHTML = Game.data.entities.map((e,i) => `
+      <div class="card" style="min-width:280px">
+        <strong>Тренер ${i+1}</strong>
+        <label>Лига: <select onchange="UI.onLeagueChange(${i}, this.value)"><option value="">Выберите</option>${leagues.map(l=>`<option value="${l}" ${e.league===l?'selected':''}>${l}</option>`).join('')}</select></label>
+        <label>Клуб: <select id="club-select-${i}" onchange="UI.updateEntityClub(${i}, this.value)" ${!e.league?'disabled':''}><option value="">Выберите</option>${e.league?WorldGen.realLeagues[e.league].clubs.map(c=>`<option value="${c}" ${e.clubId===c?'selected':''}>${c}</option>`).join(''):''}</select></label>
+        <div id="settings-block-${i}" style="display: none; margin-top:5px">
+          <strong>Настройки тренера:</strong>
+          <label>Доп. вложения: <select id="setting-investment-${i}">
+            <option value="0">Нет</option><option value="1000000">1 млн $</option><option value="5000000">5 млн $</option>
+            <option value="10000000">10 млн $</option><option value="50000000">50 млн $</option>
+            <option value="100000000">100 млн $</option><option value="500000000">500 млн $</option>
+            <option value="1000000000">1 млрд $</option>
+          </select></label>
+          <label>Сложность переговоров: <select id="setting-negotiation-${i}">
+            <option value="peaceful">Мирная</option><option value="easy">Лёгкая</option>
+            <option value="normal">Средняя</option><option value="hard">Тяжёлая</option>
+            <option value="stubborn">Неуступчивая</option>
+          </select></label>
+          <label>Вызов в сборную: <select id="setting-national-${i}">
+            <option value="yes">Да</option><option value="no">Нет</option>
+          </select></label>
+        </div>
+        <button class="danger" onclick="if(confirm('Удалить?')){ Game.data.entities.splice(${i},1); UI.renderEntityList(); }">✖</button>
+      </div>
+    `).join('');
+  },
+  onLeagueChange(idx, league) {
+    const ent = Game.data.entities[idx]; ent.league = league; ent.clubId = null;
+    const sel = document.getElementById(`club-select-${idx}`); sel.disabled = !league;
+    sel.innerHTML = '<option value="">Клуб</option>' + (league ? WorldGen.realLeagues[league].clubs.map(c=>`<option value="${c}">${c}</option>`).join('') : '');
+  },
+  updateEntityClub(idx, clubId) {
+    Game.data.entities[idx].clubId = clubId || null;
+    const settingsDiv = document.getElementById(`settings-block-${idx}`);
+    if (settingsDiv) settingsDiv.style.display = clubId ? 'block' : 'none';
+  },
+  confirmCareer() {
+    if (!Game.data.entities.length) return this.notify('Добавьте тренера');
+    Game.data.entities.forEach((ent, i) => {
+      const investment = parseInt(document.getElementById(`setting-investment-${i}`)?.value) || 0;
+      const negotiation = document.getElementById(`setting-negotiation-${i}`)?.value || 'normal';
+      const nationalCall = document.getElementById(`setting-national-${i}`)?.value || 'yes';
+      ent.settings = { investment, negotiation, nationalCall };
+      if (ent.clubId) {
+        const club = Game.data.world.clubs[ent.clubId];
+        club.budget += investment;
+      }
+    });
+    Game.data.currentEntityIdx = 0;
+    this.switchScreen('career-hub');
+    this.renderCenter();
+    this.renderNavButtons();
+    Game.save();
+  },
+  addEntityToCareer() {
+    if (Game.data.entities.length>=6) return this.notify('Максимум 6');
+    Game.data.entities.push({ type:'manager', clubId:null, playerId:null, name:'Тренер', league:null, trust:50 });
+    this.switchScreen('new-career');
+    this.renderEntityList();
+  },
+  async loadCareer() {
+    if (await Game.load()) {
+      this.switchScreen('career-hub');
+      this.renderCenter();
+      this.renderNavButtons();
+      this.notify('Загружено');
+    } else this.notify('Нет сохранений');
+  },
+  async importBackup() {
+    const input = document.createElement('input'); input.type='file'; input.accept='.json';
+    input.onchange = async e => {
+      await Game.importBackup(e.target.files[0]);
+      UI.switchScreen('career-hub');
+      UI.renderCenter();
+      UI.renderNavButtons();
+    };
+    input.click();
+  }
+};
+
+// ======================== ОБРАБОТЧИКИ ========================
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('main-menu-buttons').innerHTML = `
+    <button class="primary" id="btn-new-career">НОВАЯ КАРЬЕРА</button>
+    <button id="btn-load-career">ЗАГРУЗИТЬ</button>
+    <button id="btn-import-backup">ИМПОРТ БЭКАПА</button>`;
+  document.getElementById('btn-new-career').addEventListener('click', UI.startNewCareer.bind(UI));
+  document.getElementById('btn-load-career').addEventListener('click', UI.loadCareer.bind(UI));
+  document.getElementById('btn-import-backup').addEventListener('click', UI.importBackup.bind(UI));
+  document.getElementById('btn-add-manager').addEventListener('click', () => UI.addEntity('manager'));
+  document.getElementById('btn-confirm-career').addEventListener('click', UI.confirmCareer.bind(UI));
+  document.getElementById('btn-back-to-menu').addEventListener('click', () => UI.switchScreen('main-menu'));
+
+  Audio.init();
+  UI.switchScreen('main-menu');
+});
+</script>
+</body>
+</html>
