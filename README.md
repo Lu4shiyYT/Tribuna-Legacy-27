@@ -1,2 +1,3 @@
-# Tribuna-Legacy-27
-Tribuna Legacy 27
+# Tribuna Legacy 27
+Персональный футбольный симулятор карьеры.  
+Запуск: открыть `index.html` в браузере.
